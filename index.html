@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>南北差异问卷 North–South Survey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #fdf6ec; --surface: #fffdf9; --fg: #3b2a20; --muted: #7d6859; --line: #ecdcc8;
+  --accent: #c2502f; --accent-soft: #fbe6d9; --on-accent: #ffffff;
+  --north: #c2702a; --south: #2f7f78;
+  --bad: #b3392f; --good: #3f7d4f;
+  --radius: 14px;
+  --font-display: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 64px; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  font-size: 16px; line-height: 1.6; padding-inline: 16px;
+  padding-block: 0 calc(64px + env(safe-area-inset-bottom, 0px));
+}
+.wrap { max-width: 720px; margin-inline: auto; min-width: 0; }
+.en { color: var(--muted); font-size: 0.875rem; line-height: 1.5; }
+
+.progress {
+  position: sticky; top: 0; z-index: 5; background: var(--bg);
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; margin-inline: -16px;
+  border-bottom: 1px solid var(--line);
+}
+.progress-inner { max-width: 720px; margin-inline: auto; display: flex; align-items: center; gap: 12px; }
+.progress-label { font-size: 0.8125rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.track { flex: 1; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar { height: 100%; width: 0; background: var(--accent); transition: width 0.2s ease; }
+
+.masthead { padding-block: 32px 8px; }
+h1 {
+  font-family: var(--font-display); font-weight: 700; font-size: clamp(2rem, 7vw, 2.75rem);
+  line-height: 1.15; margin: 0; text-wrap: balance;
+}
+.subtitle { font-size: 1.0625rem; color: var(--muted); margin: 6px 0 0; letter-spacing: 0.02em; }
+.intro { margin: 20px 0 0; max-width: 60ch; }
+.intro p { margin: 0 0 6px; }
+.divide { display: flex; align-items: center; gap: 12px; margin-block: 28px 8px; font-size: 0.8125rem; color: var(--muted); }
+.divide .rule { flex: 1; height: 1px; background: var(--line); }
+.divide b { font-weight: 500; color: var(--north); }
+.divide i { font-style: normal; font-weight: 500; color: var(--south); }
+
+.notice {
+  margin-block: 16px 0; padding: 12px 14px; border: 1px solid var(--line);
+  border-left-width: 4px; border-radius: var(--radius); background: var(--surface);
+}
+.notice.ok { border-left-color: var(--good); }
+.notice.warn { border-left-color: var(--north); }
+.notice.err { border-left-color: var(--bad); }
+.notice p { margin: 0; }
+
+form { display: flex; flex-direction: column; gap: 28px; margin-top: 24px; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend { padding: 0; width: 100%; }
+.q-title { font-family: var(--font-display); font-weight: 600; font-size: 1.1875rem; line-height: 1.4; margin: 0; }
+.q-en { margin: 2px 0 10px; }
+.q-num { font-family: var(--font-body); font-weight: 500; font-size: 0.8125rem; color: var(--muted); margin-right: 8px; font-variant-numeric: tabular-nums; }
+.opts { display: grid; gap: 8px; }
+.opt {
+  display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; min-height: 48px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.opt:hover { border-color: var(--accent); background: var(--accent-soft); }
+.opt input { margin: 5px 0 0; accent-color: var(--accent); flex: none; width: 18px; height: 18px; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.opt:has(input:focus-visible), .field input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt-text { min-width: 0; overflow-wrap: anywhere; }
+.opt-zh { display: block; }
+.opt-en { display: block; color: var(--muted); font-size: 0.8125rem; line-height: 1.45; }
+.field input[type="text"] {
+  width: 100%; font: inherit; font-size: 16px; color: var(--fg); min-height: 48px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px;
+}
+.field input[type="text"]::placeholder { color: var(--muted); opacity: 0.8; }
+fieldset.missing .q-title { color: var(--bad); }
+.q-err { color: var(--bad); font-size: 0.875rem; margin: 6px 0 0; }
+
+.collector {
+  padding: 14px; border: 1px dashed var(--accent); border-radius: var(--radius); background: var(--accent-soft);
+}
+.collector .q-title { font-size: 1rem; }
+.collector legend { float: left; }
+.collector legend + input { clear: both; }
+
+.actions { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+button.primary {
+  font: inherit; font-weight: 700; color: var(--on-accent); background: var(--accent);
+  border: 0; border-radius: 999px; padding: 12px 32px; cursor: pointer; min-height: 48px;
+  box-shadow: 0 2px 0 rgba(120,50,25,0.25);
+}
+button.primary[disabled] { opacity: 0.55; cursor: default; }
+.privacy { margin: 0; max-width: 60ch; }
+@media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
+</style>
+</head>
+<body>
+<div class="progress">
+  <div class="progress-inner">
+    <div class="track" aria-hidden="true"><div class="bar" id="bar"></div></div>
+    <div class="progress-label" id="plabel" aria-live="polite">0 / 10</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>南北差异问卷</h1>
+    <p class="subtitle">North–South Survey</p>
+    <div class="intro">
+      <p>这份问卷了解你成长环境中的饮食、语言、气候和生活习惯,共10道题,约需2分钟。没有对错之分,请按你的真实情况选择。</p>
+      <p class="en">This survey asks about the food, language, climate and customs of the place you grew up. It has 10 questions and takes about 2 minutes. There are no right or wrong answers.</p>
+    </div>
+    <div class="divide" aria-hidden="true"><b>北 North</b><span class="rule"></span><span>秦岭—淮河 Qinling–Huaihe line</span><span class="rule"></span><i>South 南</i></div>
+  </header>
+
+  <div id="status" aria-live="polite"></div>
+
+  <form id="form" novalidate>
+    <fieldset class="field collector" id="fs-collector">
+      <legend>
+        <p class="q-title">采集人 Collected by</p>
+        <p class="en q-en">Team member filling this in. Remembered on this phone. 团队成员姓名,会记在这部手机上。</p>
+      </legend>
+      <input type="text" id="collector" maxlength="60" autocomplete="off" placeholder="你的名字 / Your name">
+      <p class="q-err" id="err-collector" hidden>请填写 Please fill this in</p>
+    </fieldset>
+
+    <fieldset class="field" id="fs-place">
+      <legend>
+        <p class="q-title"><span class="q-num">背景</span>你小时候主要在哪个省份、哪个城市长大?</p>
+        <p class="en q-en">In which province and city did you spend most of your childhood?</p>
+      </legend>
+      <input type="text" id="place" maxlength="80" autocomplete="off" placeholder="例如:山东 济南 / e.g. Shandong, Jinan">
+      <p class="q-err" id="err-place" hidden>请填写 Please fill this in</p>
+    </fieldset>
+
+    <div id="questions" style="display:contents"></div>
+
+    <div class="actions">
+      <button type="submit" class="primary" id="submit">提交 Submit</button>
+      <p class="en privacy">回答只用于本次调查的统计,不会公开你的姓名。Answers are used only for this survey's statistics; your name is not collected or shown.</p>
+    </div>
+  </form>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var Q = [
+    { id: "q1", zh: "你家日常饮食的主食是什么?", en: "What is the main staple at your family's meals?", o: [
+      ["A", "面食(面条、饺子、馒头、饼)", "Noodles, dumplings, steamed buns, or flatbread"],
+      ["B", "米饭", "Rice"],
+      ["C", "两者差不多", "Both about equally"] ] },
+    { id: "q2", zh: "你家的家常菜口味偏向哪种?", en: "Which flavor does your family's home cooking lean toward?", o: [
+      ["A", "偏咸、味重,多用醋和蒜", "Salty and hearty, with vinegar and garlic"],
+      ["B", "清淡、略带甜味", "Light and slightly sweet"],
+      ["C", "很辣", "Very spicy"],
+      ["D", "没有明显偏好", "No clear pattern"] ] },
+    { id: "q3", zh: "你小时候在家里说什么话?", en: "What did you speak at home growing up?", o: [
+      ["A", "普通话或北方方言(官话)", "Standard Mandarin or a Mandarin dialect"],
+      ["B", "粤语、吴语(如上海话)、闽南语、客家话或其他非官话方言", "Cantonese, Wu (e.g. Shanghainese), Min/Hokkien, Hakka, or another non-Mandarin language"],
+      ["C", "其他", "Other"] ] },
+    { id: "q4", zh: "距离你家乡约50公里的村子,那里的方言你能听懂吗?", en: "Could you understand the dialect of a village about 50 km from your hometown?", o: [
+      ["A", "很容易听懂", "Yes, easily"],
+      ["B", "只能听懂一部分", "Only partly"],
+      ["C", "几乎听不懂", "Hardly or not at all"] ] },
+    { id: "q5", zh: "小时候冬天你家里怎么取暖?", en: "How was your home heated in winter while growing up?", o: [
+      ["A", "集中供暖或暖气", "Central heating or radiators"],
+      ["B", "没有取暖,或只用电暖器、空调、被子", "No heating, or only electric heaters, air conditioners, or blankets"],
+      ["C", "其他", "Other"] ] },
+    { id: "q6", zh: "家庭或朋友的大型聚餐中,最常见的是什么?", en: "At a big family or friends' dinner, what is most common?", o: [
+      ["A", "多轮敬酒,常喝白酒或啤酒", "Many rounds of toasts, often with baijiu or beer"],
+      ["B", "喝茶、少量饮酒,节奏轻松", "Tea, light drinking, and a relaxed pace"],
+      ["C", "基本不喝酒", "Little or no alcohol"] ] },
+    { id: "q7", zh: "在社交场合(餐厅、茶馆、与亲戚相聚)你喝茶的频率如何?", en: "How often do you drink tea socially (at restaurants, tea houses, with relatives)?", o: [
+      ["A", "很少", "Rarely"],
+      ["B", "有时", "Sometimes"],
+      ["C", "经常,像日常习惯一样", "Very often, as a regular ritual"] ] },
+    { id: "q8", zh: "你的家乡有祠堂,或者大多数人同姓的村落吗?", en: "Does your hometown have an ancestral hall or a community where most people share the same surname?", o: [
+      ["A", "有,是村里生活的重要部分", "Yes, it is a major part of village life"],
+      ["B", "有一些", "Somewhat"],
+      ["C", "没有", "No"] ] },
+    { id: "q9", zh: "你家乡周围的地貌最接近以下哪种?", en: "Which best describes the landscape around your hometown?", o: [
+      ["A", "广阔的平原、干旱土地或高原", "Wide plains, dry land, or plateau"],
+      ["B", "河流、水网、湖泊和丘陵", "Rivers, canals, lakes, and hills"],
+      ["C", "山区或海边", "Mountains or coast"],
+      ["D", "其他", "Other"] ] },
+    { id: "q10", zh: "你认为自己是:", en: "In your own view, are you:", o: [
+      ["A", "北方人", "A northerner"],
+      ["B", "南方人", "A southerner"],
+      ["C", "都不是或兼有", "Neither or mixed"] ] }
+  ];
+
+  var QUEUE_KEY = "ns_queue_v1", NAME_KEY = "ns_collector_v1";
+  var $ = function (id) { return document.getElementById(id); };
+  var flushing = false;
+
+  function store(key, val) { try { if (val === undefined) return localStorage.getItem(key); localStorage.setItem(key, val); } catch (e) {} return null; }
+  function loadQueue() { try { return JSON.parse(store(QUEUE_KEY) || "[]"); } catch (e) { return []; } }
+  function saveQueue(q) { store(QUEUE_KEY, JSON.stringify(q)); }
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16);
+    });
+  }
+
+  /* ---------- build the form ---------- */
+  var host = $("questions");
+  Q.forEach(function (q, i) {
+    var fs = document.createElement("fieldset");
+    fs.id = "fs-" + q.id;
+    var lg = document.createElement("legend");
+    var t = document.createElement("p"); t.className = "q-title";
+    var num = document.createElement("span"); num.className = "q-num"; num.textContent = (i + 1) + "/10";
+    t.appendChild(num); t.appendChild(document.createTextNode(q.zh));
+    var e = document.createElement("p"); e.className = "en q-en"; e.textContent = q.en;
+    lg.appendChild(t); lg.appendChild(e); fs.appendChild(lg);
+    var opts = document.createElement("div"); opts.className = "opts";
+    q.o.forEach(function (o) {
+      var lab = document.createElement("label"); lab.className = "opt"; lab.htmlFor = q.id + "-" + o[0];
+      var inp = document.createElement("input");
+      inp.type = "radio"; inp.name = q.id; inp.value = o[0]; inp.id = q.id + "-" + o[0];
+      var txt = document.createElement("span"); txt.className = "opt-text";
+      var z = document.createElement("span"); z.className = "opt-zh"; z.textContent = o[1];
+      var en = document.createElement("span"); en.className = "opt-en"; en.textContent = o[2];
+      txt.appendChild(z); txt.appendChild(en); lab.appendChild(inp); lab.appendChild(txt); opts.appendChild(lab);
+    });
+    fs.appendChild(opts);
+    var err = document.createElement("p"); err.className = "q-err"; err.hidden = true; err.id = "err-" + q.id;
+    err.textContent = "请选择一项 Please choose one";
+    fs.appendChild(err);
+    host.appendChild(fs);
+  });
+
+  /* ---------- helpers ---------- */
+  function notice(kind, zh, en) {
+    var s = $("status"); s.textContent = "";
+    if (!zh) return;
+    var d = document.createElement("div"); d.className = "notice " + kind;
+    d.setAttribute("role", kind === "err" ? "alert" : "status");
+    var p = document.createElement("p"); p.textContent = zh;
+    var p2 = document.createElement("p"); p2.className = "en"; p2.textContent = en;
+    d.appendChild(p); d.appendChild(p2); s.appendChild(d);
+  }
+  function readAnswers() {
+    var a = {};
+    Q.forEach(function (q) {
+      var c = document.querySelector('input[name="' + q.id + '"]:checked');
+      if (c) a[q.id] = c.value;
+    });
+    return a;
+  }
+  function updateProgress() {
+    var n = Object.keys(readAnswers()).length;
+    $("bar").style.width = (n * 10) + "%";
+    $("plabel").textContent = n + " / 10";
+  }
+  $("form").addEventListener("change", function (e) {
+    updateProgress();
+    var fs = e.target.closest && e.target.closest("fieldset");
+    if (fs) { fs.classList.remove("missing"); var er = fs.querySelector(".q-err"); if (er) er.hidden = true; }
+  });
+  ["place", "collector"].forEach(function (id) {
+    $(id).addEventListener("input", function () { $("err-" + id).hidden = true; $("fs-" + id).classList.remove("missing"); });
+  });
+  $("collector").value = store(NAME_KEY) || "";
+
+  /* ---------- sending ---------- */
+  function configured() {
+    return window.SURVEY_CONFIG && SURVEY_CONFIG.supabaseUrl && SURVEY_CONFIG.supabaseAnonKey &&
+      SURVEY_CONFIG.supabaseUrl.indexOf("YOUR-") === -1 && SURVEY_CONFIG.supabaseAnonKey.indexOf("YOUR-") === -1;
+  }
+  function pendingNotice() {
+    var n = loadQueue().length;
+    if (n) notice("warn", n + " 份回答已存在这部手机上,等待发送。请保持联网并不要清除浏览器数据。", n + " response(s) saved on this phone, waiting to send. Stay online and don't clear browser data.");
+  }
+
+  // Sends queued responses one by one. Each has a client-generated id, so a retry after a
+  // lost reply can't create a duplicate row (the server answers 409, which we treat as sent).
+  async function flush() {
+    if (flushing || !configured()) return;
+    flushing = true;
+    var sent = 0, failed = false;
+    try {
+      var q = loadQueue();
+      while (q.length) {
+        var item = q[0], res;
+        try {
+          res = await fetch(SURVEY_CONFIG.supabaseUrl.replace(/\/$/, "") + "/rest/v1/responses", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": SURVEY_CONFIG.supabaseAnonKey,
+              "Authorization": "Bearer " + SURVEY_CONFIG.supabaseAnonKey,
+              "Prefer": "return=minimal"
+            },
+            body: JSON.stringify(item)
+          });
+        } catch (e) { failed = true; break; }
+        if (res.ok || res.status === 409) { q.shift(); saveQueue(q); sent++; }
+        else { failed = true; break; }
+      }
+    } finally { flushing = false; }
+    var left = loadQueue().length;
+    if (failed && left) {
+      notice("err", "发送失败," + left + " 份回答仍保存在手机上,联网后会自动重试。", "Sending failed. " + left + " response(s) are still saved on this phone and will retry when you're online.");
+    } else if (sent) {
+      notice("ok", "已保存,谢谢!可以开始下一位受访者。", "Saved. Thank you! Ready for the next respondent.");
+    }
+  }
+  window.addEventListener("online", flush);
+
+  /* ---------- submit ---------- */
+  $("form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var answers = readAnswers();
+    var place = $("place").value.trim();
+    var collector = $("collector").value.trim();
+    var firstMissing = null;
+    function miss(id) { $("err-" + id).hidden = false; $("fs-" + id).classList.add("missing"); if (!firstMissing) firstMissing = $("fs-" + id); }
+    if (!collector) miss("collector");
+    if (!place) miss("place");
+    Q.forEach(function (q) { if (!answers[q.id]) miss(q.id); });
+    if (firstMissing) {
+      notice("err", "还有题目没有回答,请检查标红的题目。", "Some questions are unanswered. Please check the ones marked in red.");
+      firstMissing.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (!configured()) {
+      notice("err", "网站还没有配置数据库,回答无法保存。", "The site isn't connected to the database yet (see config.js). Answers can't be saved.");
+      return;
+    }
+    store(NAME_KEY, collector);
+    var q = loadQueue();
+    q.push({ id: uuid(), created_at: new Date().toISOString(), collected_by: collector, place: place, answers: answers });
+    saveQueue(q);
+
+    // Clear the form for the next respondent; the collector name stays.
+    $("form").reset();
+    $("collector").value = collector;
+    updateProgress();
+    notice("warn", "正在发送……", "Sending…");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    flush();
+  });
+
+  updateProgress();
+  if (!configured()) {
+    notice("warn", "网站还没有配置数据库。请先填写 config.js。", "Database not configured yet. Fill in config.js first.");
+  } else if (loadQueue().length) {
+    pendingNotice();
+    flush();
+  }
+})();
+</script>
+</body>
+</html>
