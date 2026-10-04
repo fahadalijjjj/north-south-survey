@@ -305,7 +305,6 @@ button.primary[disabled] { opacity: 0.55; cursor: default; }
             headers: {
               "Content-Type": "application/json",
               "apikey": SURVEY_CONFIG.supabaseAnonKey,
-              "Authorization": "Bearer " + SURVEY_CONFIG.supabaseAnonKey,
               "Prefer": "return=minimal"
             },
             body: JSON.stringify(item)
