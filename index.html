@@ -56,6 +56,8 @@ h1 {
 .notice.warn { border-left-color: var(--north); }
 .notice.err { border-left-color: var(--bad); }
 .notice p { margin: 0; }
+#backup { margin: 0 0 16px; }
+#backup button { font: inherit; font-weight: 600; padding: 10px 16px; border-radius: var(--radius); border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent); cursor: pointer; }
 
 form { display: flex; flex-direction: column; gap: 28px; margin-top: 24px; }
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
@@ -122,6 +124,9 @@ button.primary[disabled] { opacity: 0.55; cursor: default; }
   </header>
 
   <div id="status" aria-live="polite"></div>
+  <div id="backup" hidden>
+    <button type="button" id="dl">下载未发送的回答 (CSV) Download unsent responses (CSV)</button>
+  </div>
 
   <form id="form" novalidate>
     <fieldset class="field collector" id="fs-collector">
@@ -207,7 +212,32 @@ button.primary[disabled] { opacity: 0.55; cursor: default; }
 
   function store(key, val) { try { if (val === undefined) return localStorage.getItem(key); localStorage.setItem(key, val); } catch (e) {} return null; }
   function loadQueue() { try { return JSON.parse(store(QUEUE_KEY) || "[]"); } catch (e) { return []; } }
-  function saveQueue(q) { store(QUEUE_KEY, JSON.stringify(q)); }
+  function saveQueue(q) { store(QUEUE_KEY, JSON.stringify(q)); refreshBackup(); }
+
+  // Offline backup: only shown while responses are still waiting on this phone.
+  function refreshBackup() { $("backup").hidden = !loadQueue().length; }
+  function csvCell(v) {
+    v = v == null ? "" : String(v);
+    if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; // stop spreadsheets running typed text as a formula
+    return '"' + v.replace(/"/g, '""') + '"';
+  }
+  function downloadQueueCsv() {
+    var q = loadQueue();
+    if (!q.length) return;
+    var head = ["id", "created_at", "collected_by", "place"].concat(Q.map(function (x) { return x.id; }));
+    var rows = [head].concat(q.map(function (r) {
+      return [r.id, r.created_at, r.collected_by, r.place].concat(Q.map(function (x) {
+        var hit = x.o.filter(function (o) { return o[0] === (r.answers || {})[x.id]; })[0];
+        return hit ? hit[2] : "";
+      }));
+    }));
+    var csv = "\ufeff" + rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = "unsent-responses-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
   function uuid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
@@ -319,6 +349,8 @@ button.primary[disabled] { opacity: 0.55; cursor: default; }
     }
   }
   window.addEventListener("online", flush);
+  $("dl").addEventListener("click", downloadQueueCsv);
+  refreshBackup();
 
   /* ---------- submit ---------- */
   $("form").addEventListener("submit", function (ev) {
